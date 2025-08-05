@@ -297,8 +297,78 @@ export default function App() {
     }
   }, [walletData]);
 
-  const handleAddContact = async () => { /* ... As before ... */ };
-  const handleDeleteContact = async (contactId) => { /* ... As before ... */ };
+    const handleAddContact = async () => {
+    // 1. Validate the inputs: Check if the name is not empty and the address is valid.
+    if (!newContactName.trim() || !isAddress(newContactAddress)) {
+      return toast.error("Please enter a valid name and address.");
+    }
+
+    // 2. Create the payload object to send to the backend.
+    const payload = {
+      walletAddress: walletData.address,
+      contactName: newContactName.trim(),
+      contactAddress: newContactAddress.trim()
+    };
+
+    try {
+      // 3. Send the new contact data to the backend using a POST request.
+      const res = await fetch(`${API_URL}/api/contacts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      // 4. Check if the server responded with an error.
+      if (!res.ok) {
+        // If there's an error, try to parse the error message from the server's response.
+        throw new Error((await res.json()).error || 'Failed to add contact');
+      }
+
+      // 5. If successful, show a success message.
+      toast.success("Contact added!");
+      
+      // 6. Clear the input fields.
+      setNewContactName("");
+      setNewContactAddress("");
+      
+      // 7. Refresh the contacts list to show the new addition.
+      fetchContacts();
+
+    } catch (e) {
+      // 8. If any part of the process fails, show the error message.
+      toast.error(e.message);
+    }
+  };
+
+  const handleDeleteContact = async (contactId) => {
+    // 1. Ask the user for confirmation before deleting.
+    // window.confirm() shows a simple browser pop-up. If the user clicks "Cancel", it returns false.
+    if (!window.confirm("Are you sure you want to delete this contact?")) {
+      return; // Stop the function if the user cancels.
+    }
+
+    try {
+      // 2. Send a DELETE request to the backend, targeting the specific contact by its ID.
+      const res = await fetch(`${API_URL}/api/contacts/${contactId}`, {
+        method: 'DELETE'
+      });
+
+      // 3. Check for any errors from the server.
+      if (!res.ok) {
+        throw new Error((await res.json()).error || 'Failed to delete contact');
+      }
+
+      // 4. If successful, show a success message.
+      toast.success("Contact deleted.");
+      
+      // 5. Refresh the contacts list to reflect the deletion.
+      fetchContacts();
+      
+    } catch (e) {
+      // 6. If anything fails, show the error message.
+      toast.error(e.message);
+    }
+  };
 
   // This effect handles estimating the gas fee.
   useEffect(() => {
